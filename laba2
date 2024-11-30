@@ -1,0 +1,251 @@
+import math
+class Shapes:
+    def __init__(self, n_angles, angles, sides):
+        self.n_angles = n_angles
+        self.angles = angles
+        self.sides = sides
+
+        if not self.validate_shape():
+            raise ValueError("Вы ввели некорректные параметры")
+
+    def validate_shape(self):
+        if self.n_angles < 0:
+            return False
+        if len(self.angles) != self.n_angles and self.n_angles > 0:
+            return False
+        if len(self.sides) != self.n_angles and self.n_angles > 0:
+            return False
+        if any(angle <= 0 or angle >= 360 for angle in self.angles):
+            return False
+        if any(side <= 0 for side in self.sides):
+            return False
+        return True
+
+    def get_perimeter(self):
+        return sum(self.sides)
+
+    def get_info(self):
+        return f"Angles: {self.angles}, Sides: {self.sides}, Perimeter: {self.get_perimeter()}"
+
+
+class Circle(Shapes):
+    def __init__(self, radius):
+        if radius <= 0:
+            raise ValueError("Radius must be a positive number.")
+        super().__init__(0, [], [radius])
+        self.name = "Circle"
+        self.radius = radius
+
+    def get_sq(self):
+        return math.pi * (self.radius ** 2)
+
+    def get_info(self):
+        return f"{self.name}: Radius: {self.radius}, Area: {self.get_sq():.2f}"
+
+
+class Triangle(Shapes):
+    def __init__(self, angles, sides):
+        super().__init__(3, angles, sides)
+        self.name = "Triangle"
+
+        if not self.validate_triangle():
+            raise ValueError("Некорректные параметры для треугольников")
+
+    def validate_triangle(self):
+        if sum(self.angles) != 180:
+            return False
+        return (self.sides[0] + self.sides[1] > self.sides[2] and
+                self.sides[0] + self.sides[2] > self.sides[1] and
+                self.sides[1] + self.sides[2] > self.sides[0])
+
+    def get_sq_heron(self):
+        # Площадь по формуле Герона
+        s = self.get_perimeter() / 2
+        area = math.sqrt(s * (s - self.sides[0]) * (s - self.sides[1]) * (s - self.sides[2]))
+        return area
+
+    def get_sq_base_height(self, base, height):
+        # Площадь по формуле 1/2 * основание * высота
+        return 0.5 * base * height
+
+    def get_sq_two_sides_angle(self, side_a, side_b, angle):
+        # Площадь по формуле 1/2 * a * b * sin(C)
+        return 0.5 * side_a * side_b * math.sin(math.radians(angle))
+
+    def get_sq(self):
+        return self.get_sq_heron()
+
+    def get_info(self):
+        return f"{self.name}: Angles: {self.angles}, Sides: {self.sides}, Perimeter: {self.get_perimeter()}, Area: {self.get_sq():.2f}"
+
+
+class Quadrangle(Shapes):
+    def __init__(self, angles, sides):
+        super().__init__(4, angles, sides)
+        self.name = "Quadrangle"
+
+        if not self.validate_quadrangle():
+            raise ValueError("Некорректные данные для четырехугольника")
+
+    def validate_quadrangle(self):
+        if len(self.angles) != 4:
+            return False
+
+        if self.angles.count(-1) == 1:
+            missing_index = self.angles.index(-1)
+            self.angles[missing_index] = 360 - sum(angle for angle in self.angles if angle != -1)
+
+        if sum(self.angles) != 360:
+            return False
+
+        return all(side > 0 for side in self.sides)
+
+    def get_sq(self):
+        if all(angle == 90 for angle in self.angles):
+            return self.sides[0] * self.sides[1]
+
+        elif len(set(self.sides)) == 1:
+            return self.sides[0] ** 2
+
+        else:
+            s = sum(self.sides) / 2
+            area = math.sqrt((s - self.sides[0]) * (s - self.sides[1]) *
+                             (s - self.sides[2]) * (s - self.sides[3]))
+            return area
+
+    def get_info(self):
+        return f"{self.name}: Angles: {self.angles}, Sides: {self.sides}, Perimeter: {self.get_perimeter()}, Area: {self.get_sq():.2f}"
+
+
+class Nangle(Shapes):
+    def __init__(self, angles=None, sides=None):
+        if angles is not None and sides is not None:
+            raise ValueError("Должен быть введен либо список углов, либо список сторон.")
+
+        if angles is None and sides is None:
+            raise ValueError("Необходимо ввести либо углы, либо стороны.")
+
+        if angles is not None:
+            self.n_angles = len(angles)
+            self.angles = angles
+            self.sides = [0] * self.n_angles
+        else:
+            self.n_angles = len(sides)
+            self.sides = sides
+            self.angles = [0] * self.n_angles
+
+        if not self.validate_nangle():
+            raise ValueError("Недопустимые параметры для n-угольников!")
+
+    def validate_nangle(self):
+        if any(angle <= 0 or angle >= 360 for angle in (self.angles or [])):
+            return False
+
+        if any(side <= 0 for side in (self.sides or [])):
+            return False
+
+        return True
+
+    def get_sq(self):
+        # Пример расчета площади через диагонали и синусы (упрощенный)
+        area = 0
+        for i in range(self.n_angles):
+            j = (i + 1) % self.n_angles  # Следующий угол
+            area += (self.sides[i] * self.sides[j] * math.sin(math.radians(self.angles[i]))) / 2
+
+        return abs(area)
+
+    def get_info(self):
+        return f"Nangle: Angles: {self.angles}, Sides: {self.sides}, Area: {self.get_sq():.2f}"
+
+
+def main():
+    while True:
+        print("\nВыберите фигуру для расчета:")
+        print("1. Круг")
+        print("2. Треугольник")
+        print("3. Четырехугольник")
+        print("4. Многоугольник ")
+
+        choice = input("Введите номер фигуры: ")
+
+        if choice == '1':
+            try:
+                radius = float(input("Введите радиус круга: "))
+                if radius <= 0:
+                    raise ValueError("Радиус должен быть положительным")
+                circle = Circle(radius)
+                print(circle.get_info())
+            except ValueError as e:
+                print(e)
+
+        elif choice == '2':
+            angles = list(map(float, input("Введите углы треугольника через пробел: ").split()))
+            sides = list(map(float, input("Введите стороны треугольника через пробел: ").split()))
+
+            try:
+                triangle = Triangle(angles, sides)
+                print(triangle.get_info())
+
+                method_choice = input(
+                    "Выберите метод для расчета площади:\n1. Формула Герона\n2. Основание и высота\n3. Две стороны и угол\nВведите номер метода: ")
+
+                if method_choice == '1':
+                    print(f"Площадь треугольника (Герон): {triangle.get_sq_heron():.2f}")
+                elif method_choice == '2':
+                    base = float(input("Введите длину основания: "))
+                    height = float(input("Введите высоту: "))
+                    area = triangle.get_sq_base_height(base, height)
+                    print(f"Площадь треугольника (основание и высота): {area:.2f}")
+                elif method_choice == '3':
+                    side_a = float(input("Введите длину первой стороны: "))
+                    side_b = float(input("Введите длину второй стороны: "))
+                    angle = float(input("Введите угол между ними: "))
+                    area = triangle.get_sq_two_sides_angle(side_a, side_b, angle)
+                    print(f"Площадь треугольника (две стороны и угол): {area:.2f}")
+                else:
+                    print("Неверный выбор метода")
+
+            except ValueError as e:
+                print(e)
+
+        elif choice == '3':
+            while True:
+                angles_input = input("Введите углы четырехугольника через пробел (введите -1 для неизвестного угла): ")
+                angles = list(map(float, angles_input.split()))
+                sides_input = input("Введите стороны четырехугольника через пробел: ")
+                sides = list(map(float, sides_input.split()))
+
+                try:
+                    quadrangle = Quadrangle(angles, sides)
+                    print(quadrangle.get_info())
+                    break
+                except ValueError as e:
+                    print(e)
+
+        elif choice == '4':
+            while True:
+                angle_input = input("Введите углы многоугольника через пробел (или оставьте пустым для ввода сторон): ")
+                angles = list(map(float, angle_input.split())) if angle_input else None
+
+                side_input = input(
+                    "Введите стороны многоугольника через пробел (или оставьте пустым для ввода углов): ")
+                sides = list(map(float, side_input.split())) if side_input else None
+
+                try:
+                    nangle = Nangle(angles=angles, sides=sides)
+                    print(nangle.get_info())
+                    break
+                except ValueError as e:
+                    print(e)
+
+        elif choice == '5':
+            print("Выход из программы")
+            break
+
+        else:
+            print("Ошибка! Пожалуйста выберите снова")
+
+
+if __name__ == "__main__":
+    main()
